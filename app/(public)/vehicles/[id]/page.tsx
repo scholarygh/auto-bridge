@@ -38,6 +38,13 @@ export default function VehicleDetailPage() {
   const [showInquiryForm, setShowInquiryForm] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [inquiryForm, setInquiryForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    message: ''
+  });
+  const [submittingInquiry, setSubmittingInquiry] = useState(false);
 
   useEffect(() => {
     if (params.id) loadVehicle();
@@ -54,6 +61,39 @@ export default function VehicleDetailPage() {
       setError("Failed to load vehicle details");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleInquirySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmittingInquiry(true);
+    
+    try {
+      const response = await fetch('/api/vehicle-inquiry', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...inquiryForm,
+          vehicleId: vehicle.id,
+          vehicleTitle: `${vehicle.year} ${vehicle.make} ${vehicle.model}`
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert('Inquiry submitted successfully! We will contact you soon.');
+        setShowInquiryForm(false);
+        setInquiryForm({ name: '', email: '', phone: '', message: '' });
+      } else {
+        alert(result.error || 'Failed to submit inquiry. Please try again.');
+      }
+    } catch (error) {
+      alert('Failed to submit inquiry. Please try again.');
+    } finally {
+      setSubmittingInquiry(false);
     }
   };
 
@@ -290,6 +330,98 @@ export default function VehicleDetailPage() {
           </aside>
         </div>
       </main>
+
+      {/* Inquiry Form Modal */}
+      {showInquiryForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900">Make Inquiry</h3>
+                <button
+                  onClick={() => setShowInquiryForm(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleInquirySubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={inquiryForm.name}
+                    onChange={(e) => setInquiryForm({...inquiryForm, name: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Your full name"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={inquiryForm.email}
+                    onChange={(e) => setInquiryForm({...inquiryForm, email: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="your.email@example.com"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={inquiryForm.phone}
+                    onChange={(e) => setInquiryForm({...inquiryForm, phone: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Your phone number"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Message
+                  </label>
+                  <textarea
+                    value={inquiryForm.message}
+                    onChange={(e) => setInquiryForm({...inquiryForm, message: e.target.value})}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Tell us about your interest in this vehicle..."
+                  />
+                </div>
+                
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowInquiryForm(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingInquiry}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                  >
+                    {submittingInquiry ? 'Submitting...' : 'Submit Inquiry'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
